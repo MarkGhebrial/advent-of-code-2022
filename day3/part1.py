@@ -12,13 +12,8 @@ for rucksack in f.readlines():
     rucksack = rucksack.strip()
 
     mid = int(len(rucksack)/2)
-    print(mid, len(rucksack))
     firstHalf = rucksack[:mid]
     secondHalf = rucksack[mid:]
-    print(len(firstHalf), len(secondHalf))
-
-    #print(firstHalf + " " + secondHalf)
-    #print(len(firstHalf) == len(secondHalf))
 
     for c in firstHalf:
         if c in secondHalf:
