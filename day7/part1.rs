@@ -1,16 +1,51 @@
 use std::fs;
 use std::rc::Rc;
+use std::cell::RefCell;
 
 #[derive(Debug)]
 enum Node {
     File { size: usize },
-    Directory { name: String, children: Rc<Vec<Node>> },
+    Directory { name: String, children: RefCell<Vec<Rc<Node>>> },
+}
+
+impl Node{
+    fn get_size(&self) -> usize {
+        match self {
+            Node::File { size } => *size,
+            Node::Directory { name: _, children } => {
+                let mut size = 0;
+                for child in children.borrow().iter() {
+                    size += child.get_size();
+                }
+                size
+            }
+        }
+    }
+}
+
+fn sum_size(dir: &Node) -> usize {
+    let mut sum = 0;
+
+    match dir {
+        Node::File { size: _ } => {},
+        Node::Directory { name: _, children } => {
+            let size = dir.get_size();
+            if size <= 100000 {
+                sum += size;
+            }
+
+            for child in children.borrow().iter() {
+                sum += sum_size(&child);
+            }
+        }
+    }
+    sum
 }
 
 fn main() {
-    let input = fs::read_to_string("test.txt").unwrap();
+    let input = fs::read_to_string("input.txt").unwrap();
 
-    let mut root = Node::Directory { name: "root".to_string(), children: Vec::new() };
+    let root = Rc::new(Node::Directory { name: "root".to_string(), children: RefCell::new(Vec::new()) });
     
     let mut curr_dir = "".to_string();
 
@@ -20,15 +55,6 @@ fn main() {
         match &line[0..1] {
             "$" => match &line[2..=3] {
                 "cd" => {
-                    /*let new_dir = line.split(" ").collect::<Vec<&str>>()[2];
-                    
-                    if let Node::Directory{ name, children } = curr_dir {
-                        for node in children {
-                            if name == new_dir {
-                                curr_dir = node;
-                            }
-                        }
-                    }*/
                     let new_dir = line.split(" ").collect::<Vec<&str>>()[2];
 
                     match new_dir {
@@ -57,11 +83,11 @@ fn main() {
 
                 let mut working_node = Rc::clone(&root);
                 for dir in path {
-                    if let Node::Directory{ ref name, mut children } = *working_node {
-                        for child in children {
-                            if let Node::Directory{ ref name, ref children } = child {
+                    if let Node::Directory{ name: _, ref children } = *working_node.clone() {
+                        for child in children.borrow().iter() {
+                            if let Node::Directory{ ref name, ref children } = **child {
                                 if name == dir {
-                                    working_node = &child;
+                                    working_node = Rc::clone(&child);
                                     break;
                                 }
                             } //BDELYGMIA IS NOT A WORD.
@@ -71,18 +97,17 @@ fn main() {
                     }
                 }
 
-                let mut working_node = &mut working_node;
-
-                if let Node::Directory{ ref name, ref mut children } = working_node {
+                if let Node::Directory{ name: _, ref children } = *working_node {
                     if args[0] == "dir" {
-                        children.push(Node::Directory{ name: String::from(args[1]), children: Vec::new() });
+                        children.borrow_mut().push(Rc::new(Node::Directory{ name: String::from(args[1]), children: RefCell::new(Vec::new()) }));
                     } else {
-                        children.push(Node::File { size: args[0].parse::<usize>().unwrap() });
+                        children.borrow_mut().push(Rc::new(Node::File { size: args[0].parse::<usize>().unwrap() }));
                     }
                 }
             }
         }
     }
 
-    println!("{:?}", root);
+    let sum = sum_size(&root);
+    println!("{}", sum);
 }
