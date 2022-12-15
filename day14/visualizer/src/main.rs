@@ -84,14 +84,19 @@ fn main() {
     *grid.get_mut(500, 0) = '+';
 
     let mut term = Term::buffered_stdout();
+    term.hide_cursor().unwrap();
     let term_size = term.size_checked();
-    let (y_size, x_size) = match term_size {
-        Some(s) => s,
+    let (y_size, x_size): (usize, usize) = match term_size {
+        Some(s) => (s.0 as usize, s.1 as usize),
         None => (10, 10),
     };
 
     let mut curr_x: usize = 500;
     let mut curr_y: usize = 0;
+
+    let mut render_x = curr_x;
+    let mut render_y = curr_y;
+
     let mut index = 0;
     'new_sand: loop {
         // For each new sand
@@ -100,18 +105,21 @@ fn main() {
             // Move the sand
 
             // Draw the grid
-            let y_bounds = if curr_y >= (y_size/2) as usize {
-                ((curr_y - (y_size/2) as usize), (curr_y + (y_size/2) as usize))
+            let y_bounds = if render_y >= y_size/2 {
+                ((render_y - y_size/2), (render_y + y_size/2))
             } else {
-                (0, y_size as usize)
+                (0, y_size)
             };
+
+            let mut falling_sand_was_rendered = false;
 
             term.clear_screen().unwrap();
             for y in y_bounds.0..y_bounds.1 {
                 let mut line = String::new();
-                for x in (curr_x - (x_size/2) as usize)..(curr_x + (x_size/2) as usize) {
+                for x in (render_x - x_size/2)..(render_x + x_size/2) {
                     if (x, y) == (curr_x, curr_y) {
-                        line += &format!("{}", style("o").red());
+                        falling_sand_was_rendered = true;
+                        line += &format!("{}", style("o").green());
                     } else {
                         line += &match *grid.get(x, y) {
                             'o' => format!("{}", style("o").yellow()),
@@ -121,14 +129,16 @@ fn main() {
                             c => format!("{}", c),
                         };
                     }
-                    if line.len() >= x_size as usize { continue }
                 }
                 write!(term, "{}", line).unwrap();
                 term.move_cursor_down(1).unwrap();
                 term.move_cursor_left(1000000000).unwrap();
             }
             term.flush().unwrap();
-            thread::sleep(Duration::from_millis(50));
+            if falling_sand_was_rendered {
+                term.flush().unwrap();
+                thread::sleep(Duration::from_millis(15));
+            }
             term.move_cursor_to(0, 0);
 
             // We're in the void
@@ -152,7 +162,14 @@ fn main() {
                 // Sand has landed
                 *grid.get_mut(curr_x, curr_y) = 'o';
                 index += 1;
-                thread::sleep(Duration::from_millis(300));
+
+                if (render_x as isize - curr_x as isize).abs() > x_size as isize - 20 {
+                    render_x = curr_x;
+                }
+                if (render_y as isize - curr_y as isize).abs() > y_size as isize - 20 {
+                    render_y = curr_y;
+                }
+
                 break 'move_sand;
             }
         }
@@ -161,7 +178,5 @@ fn main() {
         curr_y = 0;
     }
 
-    //grid.print();
-
-    //println!("{}", index);
+    println!("{} sand units have fallen", index);
 }
