@@ -79,7 +79,6 @@ fn main() {
         if cubes.contains(&cube.front()) { exposed_sides -= 1; }
         if cubes.contains(&cube.back()) { exposed_sides -= 1; }
 
-
         sum += exposed_sides;
     }
 
