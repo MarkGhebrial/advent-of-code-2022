@@ -49,14 +49,6 @@ impl<'a> Monkey<'a> {
     fn catch(&mut self, item: BigUint) {
         self.items.push_back(item);
     }
-
-    // fn reduce(&mut self) {
-    //     for item in self.items.iter_mut() {
-    //         if item % big(7) == big(0) && item % big(11) == big(0) && item % big(13) == big(0) && item % big(3) == big(0) && item % big(17) == big(0) && item % big(2) == big(0) && item % big(5) == big(0) && item % big(19) == big(0) {
-    //             *item = big(7) * big(11) * big(13) * big(3) * big(17) * big(2) * big(5) * big(19);
-    //         }
-    //     }
-    // }
 }
 
 fn main() {
@@ -147,13 +139,8 @@ fn main() {
     }
 
     let reduce = |monkey: &mut Monkey| {
-        for item in monkey.items.iter_mut() {
-            let mut is_divisible = false;
-            is_divisible = &*item % &big(7 * 11 * 13 * 3 * 17 * 2 * 5 * 19) == big(0);
-
-            if is_divisible {
-                *item = big(7 * 11 * 13 * 3 * 17 * 2 * 5 * 19);
-            }
+        for item in monkey.items.iter_mut() {          
+            *item %= big(7 * 11 * 13 * 3 * 17 * 2 * 5 * 19);
         }
     };
 
